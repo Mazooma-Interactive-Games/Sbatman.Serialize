@@ -77,6 +77,7 @@ namespace Sbatman.Serialize
             {typeof(String),(obj, data, datpos)=>{ Encoding.UTF8.GetBytes((String)obj).CopyTo(data, datpos ); }},
             {typeof(Byte[]),(obj, data, datpos)=>{ ((Byte[])obj).CopyTo(data, datpos ); }},
             {typeof(Guid),(obj, data, datpos)=>{ ((Guid)obj).ToByteArray().CopyTo(data, datpos ); }},
+            {typeof(Packet),(obj, data, datpos)=>{ ((Packet)obj).ToByteArray().CopyTo(data, datpos ); }},
             {typeof(Decimal),(obj, data, datpos)=>
             {
                 Int32[] sections = Decimal.GetBits((Decimal)obj);
