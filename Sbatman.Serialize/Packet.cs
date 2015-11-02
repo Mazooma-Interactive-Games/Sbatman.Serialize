@@ -63,21 +63,21 @@ namespace Sbatman.Serialize
 
         private static readonly Dictionary<Type, Action<Object, Byte[], Int32>> _GetBytesMethods = new Dictionary<Type, Action<Object, Byte[], Int32>>
         {
-            {typeof(Double),(obj, data, datpos)=>{ BitConverter.GetBytes((Double)obj).CopyTo(data, datpos); }},
-            {typeof(Single),(obj, data, datpos)=>{ BitConverter.GetBytes((Single)obj).CopyTo(data, datpos); }},
-            {typeof(Int32),(obj, data, datpos)=>{ BitConverter.GetBytes((Int32)obj).CopyTo(data, datpos); }},
-            {typeof(Boolean),(obj, data, datpos)=>{ BitConverter.GetBytes((Boolean)obj).CopyTo(data, datpos); }},
-            {typeof(Int64),(obj, data, datpos)=>{ BitConverter.GetBytes((Int64)obj).CopyTo(data, datpos); }},
-            {typeof(UInt64),(obj, data, datpos)=>{ BitConverter.GetBytes((UInt64)obj).CopyTo(data, datpos); }},
-            {typeof(TimeSpan),(obj, data, datpos)=>{ BitConverter.GetBytes(((TimeSpan)obj).Ticks).CopyTo(data, datpos); }},
-            {typeof(DateTime),(obj, data, datpos)=>{ BitConverter.GetBytes(((DateTime)obj).Ticks).CopyTo(data, datpos); }},
-            {typeof(Int16),(obj, data, datpos)=>{ BitConverter.GetBytes((Int16)obj).CopyTo(data, datpos); }},
-            {typeof(UInt16),(obj, data, datpos)=>{ BitConverter.GetBytes((UInt16)obj).CopyTo(data, datpos); }},
-            {typeof(UInt32),(obj, data, datpos)=>{ BitConverter.GetBytes((UInt32)obj).CopyTo(data, datpos); }},
-            {typeof(String),(obj, data, datpos)=>{ Encoding.UTF8.GetBytes((String)obj).CopyTo(data, datpos ); }},
-            {typeof(Byte[]),(obj, data, datpos)=>{ ((Byte[])obj).CopyTo(data, datpos ); }},
-            {typeof(Guid),(obj, data, datpos)=>{ ((Guid)obj).ToByteArray().CopyTo(data, datpos ); }},
-            {typeof(Packet),(obj, data, datpos)=>{ ((Packet)obj).ToByteArray().CopyTo(data, datpos ); }},
+            {typeof(Double),(obj, data, datpos)=> BitConverter.GetBytes((Double)obj).CopyTo(data, datpos)},
+            {typeof(Single),(obj, data, datpos)=> BitConverter.GetBytes((Single)obj).CopyTo(data, datpos)},
+            {typeof(Int32),(obj, data, datpos)=> BitConverter.GetBytes((Int32)obj).CopyTo(data, datpos)},
+            {typeof(Boolean),(obj, data, datpos)=> BitConverter.GetBytes((Boolean)obj).CopyTo(data, datpos)},
+            {typeof(Int64),(obj, data, datpos)=> BitConverter.GetBytes((Int64)obj).CopyTo(data, datpos)},
+            {typeof(UInt64),(obj, data, datpos)=> BitConverter.GetBytes((UInt64)obj).CopyTo(data, datpos)},
+            {typeof(TimeSpan),(obj, data, datpos)=> BitConverter.GetBytes(((TimeSpan)obj).Ticks).CopyTo(data, datpos)},
+            {typeof(DateTime),(obj, data, datpos)=> BitConverter.GetBytes(((DateTime)obj).Ticks).CopyTo(data, datpos)},
+            {typeof(Int16),(obj, data, datpos)=> BitConverter.GetBytes((Int16)obj).CopyTo(data, datpos)},
+            {typeof(UInt16),(obj, data, datpos)=> BitConverter.GetBytes((UInt16)obj).CopyTo(data, datpos)},
+            {typeof(UInt32),(obj, data, datpos)=> BitConverter.GetBytes((UInt32)obj).CopyTo(data, datpos)},
+            {typeof(String),(obj, data, datpos)=> Encoding.UTF8.GetBytes((String)obj).CopyTo(data, datpos )},
+            {typeof(Byte[]),(obj, data, datpos)=> ((Byte[])obj).CopyTo(data, datpos )},
+            {typeof(Guid),(obj, data, datpos)=> ((Guid)obj).ToByteArray().CopyTo(data, datpos )},
+            {typeof(Packet),(obj, data, datpos)=> ((Packet)obj).ToByteArray().CopyTo(data, datpos )},
             {typeof(Decimal),(obj, data, datpos)=>
             {
                 Int32[] sections = Decimal.GetBits((Decimal)obj);
@@ -635,7 +635,7 @@ namespace Sbatman.Serialize
                         Byte[] data = new Byte[BitConverter.ToInt32(_Data, bytepos)];
                         bytepos += 4;
                         Array.Copy(_Data, bytepos, data, 0, data.Length);
-                        _PacketObjects.Add(Packet.FromByteArray(data));
+                        _PacketObjects.Add(FromByteArray(ref data));
                         bytepos += data.Length;
                     }
                     break;
@@ -762,9 +762,9 @@ namespace Sbatman.Serialize
         /// <summary>
         ///     Converts a byte array to a packet
         /// </summary>
-        /// <param name="data">the byte array to convery</param>
+        /// <param name="data">A refrence to the byte array to convert</param>
         /// <returns>Returns a packet build from a byte array</returns>
-        public static Packet FromByteArray(Byte[] data)
+        public static Packet FromByteArray(ref Byte[] data)
         {
             Packet returnPacket = new Packet(BitConverter.ToUInt16(data, 10))
             {
@@ -775,6 +775,16 @@ namespace Sbatman.Serialize
             Array.Copy(data, 12, returnPacket._Data, 0, returnPacket._Data.Length);
             returnPacket.UpdateObjects();
             return returnPacket;
+        }
+
+        /// <summary>
+        ///     Converts a byte array to a packet
+        /// </summary>
+        /// <param name="data">The byte array to convert</param>
+        /// <returns>Returns a packet build from a byte array</returns>
+        public static Packet FromByteArray(Byte[] data)
+        {
+            return FromByteArray(ref data);
         }
 
         /// <summary>
@@ -795,7 +805,7 @@ namespace Sbatman.Serialize
             data.Read(packetData, PACKET_HEADER_LENGTH, (Int32)remainingPacketLength);
             Array.Copy(packetHeader, packetData, PACKET_HEADER_LENGTH);
 
-            return FromByteArray(packetData);
+            return FromByteArray(ref packetData);
         }
 
         public static Byte[] Uncompress(Byte[] bytes)
