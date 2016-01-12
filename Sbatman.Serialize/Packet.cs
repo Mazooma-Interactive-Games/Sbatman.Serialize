@@ -77,6 +77,7 @@ namespace Sbatman.Serialize
                 case ParamTypes.INT64: BitConverter.GetBytes((Int64)obj).CopyTo(data, datpos); break;
                 case ParamTypes.UINT64: BitConverter.GetBytes((UInt64)obj).CopyTo(data, datpos); break;
                 case ParamTypes.BOOL: BitConverter.GetBytes((Boolean)obj).CopyTo(data, datpos); break;
+                case ParamTypes.PACKET: (((Packet)obj).ToByteArray()).CopyTo(data, datpos); break;
                 case ParamTypes.BYTE_PACKET: ((Byte[])obj).CopyTo(data, datpos); break;
                 case ParamTypes.UTF8_STRING: Encoding.UTF8.GetBytes((String)obj).CopyTo(data, datpos); break;
                 case ParamTypes.COMPRESSED_BYTE_PACKET: ((Byte[])obj).CopyTo(data, datpos); break;
@@ -403,11 +404,11 @@ namespace Sbatman.Serialize
         public void Add(IReadOnlyCollection<String> list)
         {
             if (_Disposed) throw new ObjectDisposedException(ToString());
-            if (list == null || list.Count > UInt16.MaxValue) throw new ArgumentOutOfRangeException("list", "Null and > UInt16.MaxValue element lists cannot be added");
+            if (list == null || list.Count > UInt16.MaxValue) throw new ArgumentOutOfRangeException(nameof(list), "Null and > UInt16.MaxValue element lists cannot be added");
             _ReturnByteArray = null;
             UInt32 byteLength = 3;
             while (_DataPos + byteLength >= _Data.Length) ExpandDataArray();
-            _Data[_DataPos++] = (Byte)(((Byte)ParamTypes.UTF8_STRING) | 128);
+            _Data[_DataPos++] = ((Byte)ParamTypes.UTF8_STRING) | 128;
             BitConverter.GetBytes((UInt16)list.Count).CopyTo(_Data, (Int32)_DataPos);
             _DataPos += 2;
 
@@ -450,13 +451,13 @@ namespace Sbatman.Serialize
             //  else if (o is List<Guid>) AddList((List<Guid>)o);
             //   else if (o is List<Packet>) AddList((List<Packet>)o);
             //  else if (o is List<Byte[]>) AddList((List<Byte[]>)o);
-            else { throw new ArgumentOutOfRangeException("o", "The object type is not currently supported"); }
+            else { throw new ArgumentOutOfRangeException(nameof(o), "The object type is not currently supported"); }
         }
 
         private void AddToListInternal<T>(IReadOnlyCollection<T> list, ParamTypes typeMarker, UInt32 elementSize)
         {
             if (_Disposed) throw new ObjectDisposedException(ToString());
-            if (list == null || list.Count > UInt16.MaxValue) throw new ArgumentOutOfRangeException("list", "Null and > UInt16.MaxValue element lists cannot be added");
+            if (list == null || list.Count > UInt16.MaxValue) throw new ArgumentOutOfRangeException(nameof(list), "Null and > UInt16.MaxValue element lists cannot be added");
             _ReturnByteArray = null;
             UInt32 byteLength = 3 + (elementSize * (UInt32)list.Count);
             while (_DataPos + byteLength >= _Data.Length) ExpandDataArray();

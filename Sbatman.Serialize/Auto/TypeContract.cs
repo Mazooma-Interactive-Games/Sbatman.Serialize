@@ -40,6 +40,7 @@ namespace Sbatman.Serialize.Auto
             foreach (PropertyInfo info in properties)
             {
                 if (!info.CanRead || !info.CanWrite) continue;
+                if (info.GetCustomAttribute(typeof(SkipPack)) != null) continue;
                 Packet.ParamTypes packedType = Packet.DetermineParamType(info.PropertyType);
                 if (packedType == Packet.ParamTypes.UNKNOWN) continue;
                 returnContract._PropertyTypes.Add(new Tuple<String, PropertyInfo, Packet.ParamTypes>(info.Name, info, packedType));

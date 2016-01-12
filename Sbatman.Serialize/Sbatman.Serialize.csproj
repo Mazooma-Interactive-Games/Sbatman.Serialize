@@ -42,6 +42,7 @@
   <ItemGroup>
     <Compile Include="Auto\AutoPacketableAttribute.cs" />
     <Compile Include="Auto\Serializer.cs" />
+    <Compile Include="Auto\SkipPackAttribute.cs" />
     <Compile Include="Auto\TypeContract.cs" />
     <Compile Include="NotAPacketException.cs" />
     <Compile Include="Packet.cs" />
