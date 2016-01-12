@@ -433,7 +433,7 @@ namespace Sbatman.Serialize
             else if (o is Guid) Add((Guid)o);
             else if (o is Packet) Add((Packet)o);
             else if (o is Byte[]) Add((Byte[])o);
-
+            else if (o is Boolean) Add((Boolean)o);
             else if (o is IReadOnlyCollection<String>) Add((IReadOnlyCollection<String>)o);
             else if (o is IReadOnlyCollection<Single>) Add((IReadOnlyCollection<Single>)o);
             //else if (o is IReadOnlyCollection<Int16>) Add((IReadOnlyCollection<Int16>)o);
@@ -751,7 +751,7 @@ namespace Sbatman.Serialize
                         Byte[] data = new Byte[BitConverter.ToInt32(_Data, bytepos)];
                         bytepos += 4;
                         Array.Copy(_Data, bytepos, data, 0, data.Length);
-                        _PacketObjects.Add(FromByteArray(data));
+                        _PacketObjects.Add(FromByteArray(ref data));
                         bytepos += data.Length;
                     }
                     break;
@@ -933,7 +933,7 @@ namespace Sbatman.Serialize
         /// </summary>
         /// <param name="data">the byte array to convery</param>
         /// <returns>Returns a packet build from a byte array</returns>
-        public static Packet FromByteArray(Byte[] data)
+        public static Packet FromByteArray(ref Byte[] data)
         {
             Packet returnPacket = new Packet(BitConverter.ToUInt16(data, 10))
             {
@@ -964,7 +964,7 @@ namespace Sbatman.Serialize
             data.Read(packetData, PACKET_HEADER_LENGTH, (Int32)remainingPacketLength);
             Array.Copy(packetHeader, packetData, PACKET_HEADER_LENGTH);
 
-            return FromByteArray(packetData);
+            return FromByteArray(ref packetData);
         }
 
         public static Byte[] Uncompress(Byte[] bytes)
