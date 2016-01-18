@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -49,6 +50,17 @@ namespace Sbatman.Serialize.Auto
                         if (deserializationTarget != null) objectsToSerialize.Add(new Tuple<Guid, Object>(guid, deserializationTarget));
                         returnPacket.AddObject(guid);
                     }
+                    else if (propertyType.Item3 == Packet.ParamTypes.AUTOPACK_REFRENCE_LIST)
+                    {
+                        IReadOnlyCollection<Object> deserializationTargets = (IReadOnlyCollection<Object>)propertyType.Item2.GetValue(objectBeingSerialized.Item2);
+                        returnPacket.AddObject(deserializationTargets?.Count ?? -1);
+                        foreach (Object obj in deserializationTargets)
+                        {
+                            Guid guid = Guid.NewGuid();
+                            if (obj != null) objectsToSerialize.Add(new Tuple<Guid, Object>(guid, obj));
+                            returnPacket.AddObject(guid);
+                        }
+                    }
                     else
                     {
                         returnPacket.AddObject(propertyType.Item2.GetValue(objectBeingSerialized.Item2));
@@ -79,11 +91,23 @@ namespace Sbatman.Serialize.Auto
             return typeContract;
         }
 
+        public static object ConvertList(List<object> value, Type type)
+        {
+            IList list = (IList)Activator.CreateInstance(type);
+            foreach (var item in value)
+            {
+                list.Add(item);
+            }
+            return list;
+        }
+
         public Object Deserialize(Packet p)
         {
             Object[] dataObjects = p.GetObjects();
             List<Tuple<Guid, Object>> deserializedObjects = new List<Tuple<Guid, Object>>();
             List<Tuple<Object, Guid, PropertyInfo>> pendingRefrences = new List<Tuple<Object, Guid, PropertyInfo>>();
+            List<Tuple<List<Object>,Int32,Guid>> pendingListRefrences = new List<Tuple<List<Object>, Int32, Guid>>();
+            List<Tuple<Object, List<Object>, PropertyInfo>> pendingLists = new List<Tuple<Object, List<Object>, PropertyInfo>>();
 
             int datapos = 0;
 
@@ -92,6 +116,7 @@ namespace Sbatman.Serialize.Auto
                 Guid objectGuid = (Guid)dataObjects[datapos++];
                 string typeString = (string)dataObjects[datapos++];
                 TypeContract typeContract = _CachedTypeContracts.FirstOrDefault(a => a.UID == typeString);
+
                 Type objectType = typeContract.ClassType;
 
                 object builtObject = Activator.CreateInstance(objectType);
@@ -102,6 +127,17 @@ namespace Sbatman.Serialize.Auto
                     {
                         pendingRefrences.Add(new Tuple<Object, Guid, PropertyInfo>(builtObject, (Guid)dataObjects[datapos++], propertyType.Item2));
                     }
+                    else if (propertyType.Item3 == Packet.ParamTypes.AUTOPACK_REFRENCE_LIST)
+                    {
+                        Int32 objectCount = (Int32)dataObjects[datapos++];
+                        List<Object> lst = new List<Object>(objectCount);
+                       
+                        pendingLists.Add(new Tuple<Object, List<Object>, PropertyInfo>(builtObject,lst, propertyType.Item2));
+                        for (int i = 0; i < objectCount; i++)
+                        {
+                            pendingListRefrences.Add(new Tuple<List<Object>, Int32, Guid>(lst,i, (Guid)dataObjects[datapos++]));
+                        }
+                    }
                     else
                     {
                         propertyType.Item2.SetValue(builtObject, dataObjects[datapos++]);
@@ -110,11 +146,34 @@ namespace Sbatman.Serialize.Auto
                 deserializedObjects.Add(new Tuple<Guid, Object>(objectGuid, builtObject));
             }
 
+            foreach (Tuple<List<Object>, int, Guid> refrence in pendingListRefrences)
+            {
+                Tuple<Guid, Object> linkedClass = deserializedObjects.FirstOrDefault(a => a.Item1.Equals(refrence.Item3));
+                if (linkedClass != null)
+                {
+                    if (refrence.Item2 >= refrence.Item1.Count)
+                    {
+                        refrence.Item1.Add(linkedClass.Item2);
+                    }
+                    else
+                    {
+                        refrence.Item1[refrence.Item2]=linkedClass.Item2;
+                    }
+                     
+                }
+            }
+
             foreach (Tuple<Object, Guid, PropertyInfo> refrence in pendingRefrences)
             {
                 Tuple<Guid, Object> linkedClass = deserializedObjects.FirstOrDefault(a => a.Item1.Equals(refrence.Item2));
                 if (linkedClass != null) refrence.Item3.SetValue(refrence.Item1, linkedClass.Item2);
             }
+
+            foreach (Tuple<Object, List<Object>, PropertyInfo> pendingList in pendingLists)
+            {
+                pendingList.Item3.SetValue(pendingList.Item1, ConvertList(pendingList.Item2, pendingList.Item3.PropertyType));
+            }
+
             return deserializedObjects[0].Item2;
         }
 
